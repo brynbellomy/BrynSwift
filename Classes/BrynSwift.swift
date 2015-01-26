@@ -7,33 +7,31 @@
 //
 
 import Foundation
+import SwiftLogger
+import LlamaKit
+import Funky
 
-public class BrynSwift
+
+public struct BrynSwift
 {
 }
 
-
-
-
-
+public let π = M_PI
+public let τ = 2*π
 
 
 public extension Float
 {
-    /**
-        Returns a random Float value between min and max (inclusive).
-
-        :param: min
-        :param: max
-        :returns: Random number
-    */
-    public static func random(min: Float = 0, max: Float) -> Float
-    {
-        let diff = max - min
-        let rand = Float(arc4random() % (UInt32(RAND_MAX) + 1))
-        return ((rand / Float(RAND_MAX)) * diff) + min
-    }
 }
+
+
+
+
+//public func lllog<T>(level:DefaultLogLevel, #prefix:String, file:String = __FILE__, function:String = __FUNCTION__, line:Int = __LINE__, column:Int = __COLUMN__)(val:T)
+//{
+//    let str = "\(prefix) \(val)"
+//    SwiftLogger.logToDefaultLogger(level, msg:str, file:file, function:function, line:line, column:column)
+//}
 
 
 

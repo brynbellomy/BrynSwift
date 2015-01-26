@@ -7,20 +7,31 @@
 //
 
 import Foundation
-import SwiftLogger
+
 
 public let CGVectorZero = CGVector(dx:0, dy:0)
+
+public func mapNaNComponentsToZeros(vector:CGVector) -> CGVector {
+    return CGVector(dx: vector.dx.isNaN ? 0 : vector.dx, dy: vector.dy.isNaN ? 0 : vector.dy)
+}
 
 extension CGVector : Printable
 {
     public var description : String { return "<CGVector {dx: \(self.dx), dy: \(self.dy)}>" }
-}
 
+    public func asCGPoint() -> CGPoint {
+        return CGPoint(x: dx, y: dy)
+    }
+}
 
 
 public extension CGVector
 {
     public var bk_shortDescription : String { return "<dx: \(self.dx), dy: \(self.dy)>" }
+
+    public var hasNaNComponent : Bool {
+        return dx.isNaN || dy.isNaN
+    }
 }
 
 
@@ -43,6 +54,10 @@ public extension CGPoint
     }
 
     public var bk_shortDescription : String { return "{x: \(self.x), y: \(self.y)}" }
+
+    public func asCGVector() -> CGVector {
+        return CGVector(dx: x, dy: y)
+    }
 }
 
 
@@ -64,23 +79,22 @@ public extension CGSize
 
 public extension CGPath
 {
-    public class func fromPoints(points:[CGPoint], shouldCloseShape:Bool) -> CGPath?
+    public class func fromPoints(points:[CGPoint], closePath:Bool) -> CGPath
     {
-        var poly : CGMutablePath = CGPathCreateMutable()
+        var poly: CGMutablePath = CGPathCreateMutable()
 
         if points.count > 0 {
             CGPathMoveToPoint(poly, nil, points[0].x, points[0].y)
         }
         else {
-            lllog(.Error, "could not get point[0]")
-            return nil
+            return poly
         }
 
         for point in points {
             CGPathAddLineToPoint(poly, nil, point.x, point.y)
         }
 
-        if shouldCloseShape
+        if closePath
         {
             // close the polygon
             if points.count > 0 {

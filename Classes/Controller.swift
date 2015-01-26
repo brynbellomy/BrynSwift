@@ -7,71 +7,141 @@
 //
 
 import Foundation
+import SwiftDataStructures
 
 
-/**
-* MARK: - protocol IControllerChild -
-*/
+//
+// MARK: - class Controller -
+//
 
-public protocol IControllerChild
+public class Controller <K: Hashable, V>
 {
-    var enabled : Bool { get set }
+    public typealias Key = K
+    public typealias Value = V
+    public typealias UnderlyingCollection = OrderedDictionary<Key, Value>
+    public typealias Element = (Key, Value)
+    public typealias Index   = UnderlyingCollection.Index
 
-    func didMoveToController()
-    func willMoveFromController()
-}
-
-
-/**
-* MARK: - class Controller -
-*/
-
-public class Controller<Key : Hashable>
-{
     public var enabled = true
-    public private(set) var children = [Key : IControllerChild]()
+    public var childDidMoveToController: (V -> ())?
+    public var childWillMoveFromController: (V -> ())?
 
-    public init() {
+    public typealias MessageClosure = V -> ()
+    public private(set) var messages = [String: MessageClosure]()
+
+
+    public private(set) var children = UnderlyingCollection()
+
+    public required init() {
     }
 
     deinit {
-        removeAll()
+        removeAll(keepCapacity: false)
     }
 
     public func has(key:Key) -> Bool {
-        if let _ = children.indexForKey(key)? { return true }
-        else { return false }
+        return children.indexForKey(key) != nil
     }
 
-    public func childForKey(key:Key) -> IControllerChild? {
+    public func childForKey(key:Key) -> Value? {
         return children[key]
     }
 
-    public func add(child:IControllerChild, withKey key:Key)
+    public func add(child:Value, withKey key:Key)
     {
         remove(key)
 
         children[key] = child
-        child.didMoveToController()
+        childDidMoveToController?(child)
     }
 
-    public func remove(key:Key) -> IControllerChild?
+    public func remove(key:Key) -> Value?
     {
-        if let child = children[key]? {
-            child.willMoveFromController()
-            return children.removeValueForKey(key)
+        if let child = children[key] {
+            childWillMoveFromController?(child)
+            let removed = children.removeForKey(key)
+            return removed.value
         }
         return nil
     }
 
-    public func removeAll()
+    public func removeWhere(predicate: (Key, Value) -> Bool) {
+    }
+
+    public func removeAll(#keepCapacity:Bool)
     {
-        for (key, child) in children {
-            child.willMoveFromController()
+        for (key, child) in children.generateTuples() {
+            childWillMoveFromController?(child)
         }
-        children.removeAll()
+        children.removeAll(keepCapacity:keepCapacity)
     }
 }
+
+
+
+//
+// MARK: - Controller: SequenceType
+//
+
+extension Controller: SequenceType
+{
+    public typealias Generator = GeneratorOf<Element>
+    public func generate() -> Generator
+    {
+        var generator = children.generateTuples()
+        return GeneratorOf { generator.next() }
+    }
+}
+
+
+//
+// MARK: - Controller: CollectionType
+//
+
+extension Controller: CollectionType
+{
+    public var startIndex : Index { return children.startIndex }
+    public var endIndex   : Index { return children.endIndex }
+
+    public subscript(index: Index) -> Element {
+        get { return children.elementAtIndex(index)!.asTuple() }
+    }
+
+    public subscript(key: Key) -> Value?
+    {
+        get { return children.elementForKey(key)?.value }
+        set {
+            if let val = newValue {
+                children.updateValue(val, forKey:key)
+            }
+            else {
+                children.removeForKey(key)
+            }
+        }
+    }
+}
+
+
+//
+// MARK: - Controller: ExtensibleCollectionType
+//
+
+extension Controller: ExtensibleCollectionType
+{
+    public func reserveCapacity(n: Index.Distance) {
+        children.reserveCapacity(n)
+    }
+
+    public func append(newElement: Element) {
+        children.append(newElement.0, value: newElement.1)
+    }
+
+    public func extend <S: SequenceType where S.Generator.Element == Element> (sequence: S) {
+        children.extendTuples(sequence)
+    }
+}
+
+
 
 
 

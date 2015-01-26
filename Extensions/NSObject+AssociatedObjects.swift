@@ -11,11 +11,11 @@ import Foundation
 
 public extension NSObject
 {
-    public var bk_associatedObjects : AssociatedObjectController { return AssociatedObjectController(host:self) }
+    public var bk_associatedObjects : AssociatedObjectComponent { return AssociatedObjectComponent(host:self) }
 }
 
 
-public class AssociatedObjectController
+public class AssociatedObjectComponent
 {
     public typealias KeyType = UnsafePointer<Void>
 
@@ -48,7 +48,7 @@ public class AssociatedObjectController
     }
 
 
-    public func valueForKey<T : AnyObject>(key:AssociatedObjectController.KeyType, initializer:Void -> T) -> T
+    public func valueForKey<T : AnyObject>(key:AssociatedObjectComponent.KeyType, initializer:Void -> T) -> T
     {
         if let obj = valueForKey(key) as? T {
             return obj

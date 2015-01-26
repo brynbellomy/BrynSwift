@@ -1,5 +1,5 @@
 //
-//  ScriptController.swift
+//  ScriptComponent.swift
 //  BrynSwift
 //
 //  Created by bryn austin bellomy on 2014 Oct 18.
@@ -9,9 +9,11 @@
 import Foundation
 import JavaScriptCore
 import SwiftLogger
+import LlamaKit
+import Funky
 
 
-public struct ScriptController
+public struct ScriptComponent
 {
     private let context = JSContext(virtualMachine:JSVirtualMachine())
 
@@ -53,28 +55,32 @@ public struct ScriptController
      * MARK: - Public API
      */
 
-    public func require(scriptName:String)
+    public func require(scriptName:String) -> Result<JSValue?>
     {
-        if let script = ScriptController.scriptNamed(scriptName)? {
-            context.evaluateScript(script)
-        }
-        else { lllog(.Error, "Could not load script with name '\(scriptName).js'") }
+        // NOTE: it's necessary to use this longer closure notation instead of just `.map(context.evaluateScript >>> success)` because otherwise the
+        // JSValue returned by context.evaluateScript() is automatically (erroneously) released by the compiler, causing an EXC_BAD_ACCESS
+        return ScriptComponent.scriptNamed(scriptName)
+                    >>- { s in
+                            let val = self.context.evaluateScript(s)
+                            if let val = val {
+                                return success(val)
+                            }
+                            return success(nil)
+                        }
     }
 
 
-    public func callFunction(fnName:String, withArgs args:NSArray) -> JSValue?
+    public func callFunction(fnName:String, withArgs args:NSArray) -> Result<JSValue>
     {
-        if let fn : AnyObject = context.objectForKeyedSubscript(fnName)?
+        if let fn: AnyObject = context.objectForKeyedSubscript(fnName)
         {
             if let fn = fn as? JSValue {
                 let retval = fn.callWithArguments(args)
-                return retval
+                return success(retval)
             }
-            else { lllog(.Error, "Could not get function as non-nil JSValue.") }
+            else { return failure("Could not get function as non-nil JSValue.") }
         }
-        else { lllog(.Error, "Could not find function in JSContext with name '\(fnName)'.") }
-
-        return nil
+        else { return failure("Could not find function in JSContext with name '\(fnName)'.") }
     }
 
 
@@ -82,25 +88,23 @@ public struct ScriptController
     // MARK: - Private helper methods -
     //
 
-    private static func scriptNamed(scriptName:String) -> String?
+    private static func scriptNamed(scriptName:String) -> Result<String>
     {
         // load the script
 
         if let scriptURL = NSBundle.mainBundle().URLForResource(scriptName, withExtension:"js")?
         {
-            var error : NSError? = nil
-            let script = NSString(contentsOfURL:scriptURL, encoding:NSUTF8StringEncoding, error:&error)
-
-            if let error = error? {
-                lllog(.Error, "Error loading script '\(scriptName)' (url = \(scriptURL)): \(error.localizedDescription)")
-                return nil
+            var error: NSError?
+            if let script = NSString(contentsOfURL:scriptURL, encoding:NSUTF8StringEncoding, error:&error) {
+                return success(script)
             }
 
-            return script
+            if let error = error {
+                return failure("Error loading script '\(scriptName)' (url = \(scriptURL)): \(error.localizedDescription)")
+            }
+            return failure("Error loading script '\(scriptName)' (url = \(scriptURL)): unknown error.")
         }
-        else { lllog(.Error, "Could not get bundle URL for script resource '\(scriptName).js'") }
-
-        return nil
+        else { return failure("Could not get bundle URL for script resource '\(scriptName).js'") }
     }
 
 

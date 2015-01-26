@@ -39,7 +39,7 @@ class OperatorTests: XCTestCase
     func testCurryAndSwapOperator()
     {
         let someStrings = ["FIRST", "SECOND", "THIRD"]
-        let lowercaseStrings = someStrings |> curry_swapargs2(map)({ $0.lowercaseString })
+        let lowercaseStrings = someStrings |> currySwapargs2(map)({ $0.lowercaseString })
         XCTAssert(lowercaseStrings[0] == "first")
         XCTAssert(lowercaseStrings[1] == "second")
         XCTAssert(lowercaseStrings[2] == "third")

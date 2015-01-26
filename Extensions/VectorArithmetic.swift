@@ -6,6 +6,7 @@
 //  Copyright (c) 2014 bryn austin bellomy. All rights reserved.
 //
 
+import SwiftLogger
 import Foundation
 
 import CoreGraphics
@@ -124,14 +125,10 @@ public func *= <T:VectorOperatable>(inout lhs: T, value:CGFloat)   {
 
 private struct InternalVectorArithmetic {
 
-//    The problem is that CGFloat doesn't have its own NaN value, only Float and Double do.  So you'll have to change "CGFloat" in this file to Float or something, and then you can determine the isNaN stuff in AnimationController or CharacterNode without a crash occurring.
-
     static func angleInRadians  <T : VectorArithmetic>(vector:T) -> CGFloat {
         let normalizedVector = self.normalized(vector)
 
         let theta = atan2(normalizedVector.vertical, normalizedVector.horizontal)
-
-        if theta.isNaN { return 0 } //CGFloat.NaN }
         return theta //+ M_PI_2 * -1
     }
 
