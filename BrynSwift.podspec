@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.10'
   s.source_files = "Classes/*.{swift,m,h}", "Extensions/*.{swift,m,h}"
 
-  s.dependency 'Funky'
+  s.dependency 'Funky', '0.1.2'
   s.dependency 'SwiftLogger'
   s.dependency 'LlamaKit'
 

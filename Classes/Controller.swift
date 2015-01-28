@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftDataStructures
+import Funky
 
 
 //
@@ -65,7 +66,23 @@ public class Controller <K: Hashable, V>
         return nil
     }
 
-    public func removeWhere(predicate: (Key, Value) -> Bool) {
+    public func removeWhere(predicate: (Key, Value) -> Bool)
+    {
+        var toRemove = Array<UnderlyingCollection.Index>()
+        for (index, element) in enumerate(children)
+        {
+            if predicate(element.key, element.value) == false {
+                childWillMoveFromController?(element.value)
+                toRemove.append(index)
+            }
+        }
+
+        // remove in reverse order namsayne?
+        for index in reverse(toRemove) {
+            if let element = children.elementAtIndex(index) {
+                children.removeAtIndex(index)
+            }
+        }
     }
 
     public func removeAll(#keepCapacity:Bool)
@@ -74,6 +91,20 @@ public class Controller <K: Hashable, V>
             childWillMoveFromController?(child)
         }
         children.removeAll(keepCapacity:keepCapacity)
+    }
+
+    public func eachChild(closure:Value -> ()) {
+        for (key, child) in children.generateTuples() {
+            closure(child)
+        }
+    }
+
+    public func map(closure:(Key, Value) -> Value)
+    {
+        for (key, child) in children.generateTuples() {
+            let newChild = closure(key, child)
+            children[key] = newChild
+        }
     }
 }
 
